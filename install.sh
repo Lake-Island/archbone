@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-# setup.sh — minimal post‑install for Arch + bspwm on a “minimal” profile
+# setup.sh — minimal Arch + bspwm on a “minimal” profile
 # Run as your normal user (not root) after first reboot
 
 set -e
 
-# 0) Nuke any old xinitrc that came from /etc/skel
-rm -f ~/.xinitrc
-
-# 1) Update system
+# 1) Full system update
 sudo pacman -Syu --noconfirm
 
-# 2) Install only guaranteed‑existing core packages
+# 2) Install core packages
 sudo pacman -S --noconfirm \
   xorg-server xorg-xinit \
   nvidia nvidia-utils \
@@ -18,18 +15,45 @@ sudo pacman -S --noconfirm \
   pipewire pipewire-pulse wireplumber \
   alacritty rofi bspwm sxhkd picom plank nitrogen
 
-# 3) Enable NetworkManager
+# 3) Enable NetworkManager immediately
 sudo systemctl enable --now NetworkManager
 
-# 4) Create config dirs
+# 4) Make config dirs
 mkdir -p ~/.config/bspwm ~/.config/sxhkd ~/.config/picom
 
-# 5) Copy & enable bspwm + sxhkd examples
-cp /usr/share/doc/bspwm/examples/bspwmrc ~/.config/bspwm/bspwmrc
-cp /usr/share/doc/bspwm/examples/sxhkdrc ~/.config/sxhkd/sxhkdrc
+# 5) Write a minimal bspwmrc
+cat > ~/.config/bspwm/bspwmrc << 'EOF'
+#!/bin/sh
+# bspwm border/gaps
+bspc config border_width 2
+bspc config window_gap   8
+bspc config normal_border_color "#444444"
+bspc config focused_border_color "#777777"
+# Autostart
+sxhkd &
+picom &
+plank &
+exec bspwm
+EOF
 chmod +x ~/.config/bspwm/bspwmrc
 
-# 6) Write a minimal picom.conf
+# 6) Write a minimal sxhkdrc
+cat > ~/.config/sxhkd/sxhkdrc << 'EOF'
+# launch terminal
+super + Return
+    alacritty
+# launch rofi
+super + d
+    rofi -show drun
+# focus windows
+super + {h,j,k,l}
+    bspc node -f {west,south,north,east}
+# close window
+super + q
+    bspc node -c
+EOF
+
+# 7) Write a minimal picom.conf
 cat > ~/.config/picom/picom.conf << 'EOF'
 backend = "glx";
 vsync = true;
@@ -38,18 +62,19 @@ shadow-radius = 7;
 shadow-opacity = 0.5;
 EOF
 
-# 7) Write a clean .xinitrc (no twm, no xclock)
+# 8) Write your ~/.xinitrc (no twm/xclock, ever)
 cat > ~/.xinitrc << 'EOF'
 #!/bin/sh
-# restore your chosen wallpaper
+# restore last wallpaper
 nitrogen --restore &
-# hotkeys, compositor, dock
+# start hotkeys, compositor, dock
 sxhkd &
 picom &
 plank &
-# launch bspwm
+# finally: your WM
 exec bspwm
 EOF
 chmod +x ~/.xinitrc
 
-echo "All done! Type 'startx' to launch your bspwm desktop."
+echo
+echo "✅  All done! Just run: startx"
