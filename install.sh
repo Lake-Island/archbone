@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # setup.sh — minimal Arch + bspwm on a “minimal” profile
 # Run as your normal user (not root) after first reboot
-
-set -e
+set -euo pipefail
 
 # 1) Full system update
 sudo pacman -Syu --noconfirm
@@ -15,21 +14,19 @@ sudo pacman -S --noconfirm \
   pipewire pipewire-pulse wireplumber \
   alacritty rofi bspwm sxhkd picom plank nitrogen
 
-# 3) Enable NetworkManager immediately
+# 3) Enable NetworkManager now
 sudo systemctl enable --now NetworkManager
 
-# 4) Make config dirs
+# 4) Create config dirs
 mkdir -p ~/.config/bspwm ~/.config/sxhkd ~/.config/picom
 
-# 5) Write a minimal bspwmrc
+# 5) Write bspwmrc
 cat > ~/.config/bspwm/bspwmrc << 'EOF'
 #!/bin/sh
-# bspwm border/gaps
 bspc config border_width 2
 bspc config window_gap   8
 bspc config normal_border_color "#444444"
 bspc config focused_border_color "#777777"
-# Autostart
 sxhkd &
 picom &
 plank &
@@ -37,23 +34,19 @@ exec bspwm
 EOF
 chmod +x ~/.config/bspwm/bspwmrc
 
-# 6) Write a minimal sxhkdrc
+# 6) Write sxhkdrc
 cat > ~/.config/sxhkd/sxhkdrc << 'EOF'
-# launch terminal
 super + Return
     alacritty
-# launch rofi
 super + d
     rofi -show drun
-# focus windows
 super + {h,j,k,l}
     bspc node -f {west,south,north,east}
-# close window
 super + q
     bspc node -c
 EOF
 
-# 7) Write a minimal picom.conf
+# 7) Write picom.conf
 cat > ~/.config/picom/picom.conf << 'EOF'
 backend = "glx";
 vsync = true;
@@ -62,19 +55,17 @@ shadow-radius = 7;
 shadow-opacity = 0.5;
 EOF
 
-# 8) Write your ~/.xinitrc (no twm/xclock, ever)
-cat > ~/.xinitrc << 'EOF'
-#!/bin/sh
-# restore last wallpaper
-nitrogen --restore &
-# start hotkeys, compositor, dock
-sxhkd &
-picom &
-plank &
-# finally: your WM
-exec bspwm
-EOF
+# 8) Nuke any old ~/.xinitrc and recreate via printf
+rm -f ~/.xinitrc
+printf '%s\n' \
+  '#!/bin/sh' \
+  'nitrogen --restore &' \
+  'sxhkd &' \
+  'picom &' \
+  'plank &' \
+  'exec bspwm' \
+  > ~/.xinitrc
 chmod +x ~/.xinitrc
 
 echo
-echo "✅  All done! Just run: startx"
+echo "✅  Setup complete! Run 'startx' to launch bspwm."
