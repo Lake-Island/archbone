@@ -4,35 +4,37 @@
 
 set -e
 
-# 1. Update system and install packages
+# 1. Update system
 sudo pacman -Syu --noconfirm
-sudo pacman -S --noconfirm \
-  xorg-server xorg-xinit \ 
-  nvidia nvidia-utils \ 
-  networkmanager \ 
-  pipewire pipewire-pulse wireplumber \ 
-  alacritty rofi bspwm sxhkd picom plank \ 
-  arc-gtk-theme papirus-icon-theme \ 
-  ttf-dejavu ttf-liberation ttf-iosevka-nerd \ 
-  nitrogen lxappearance
 
-# 2. Enable and start NetworkManager for networking
+# 2. Install required packages
+sudo pacman -S --noconfirm \
+    xorg-server xorg-xinit \
+    nvidia nvidia-utils \
+    networkmanager \
+    pipewire pipewire-pulse wireplumber \
+    alacritty rofi bspwm sxhkd picom plank \
+    arc-gtk-theme papirus-icon-theme \
+    ttf-dejavu ttf-liberation ttf-iosevka-nerd \
+    nitrogen lxappearance
+
+# 3. Enable networking
 sudo systemctl enable --now NetworkManager
 
-# 3. Add current user to necessary groups
+# 4. Add current user to groups
 sudo usermod -aG video,audio "$USER"
 
-# 4. Create configuration directories
+# 5. Create config directories
 mkdir -p "$HOME/.config/bspwm" \
          "$HOME/.config/sxhkd" \
          "$HOME/.config/picom"
 
-# 5. Copy default configuration files
+# 6. Copy bspwm and sxhkd default configs
 cp /usr/share/doc/bspwm/examples/bspwmrc "$HOME/.config/bspwm/bspwmrc"
 cp /usr/share/doc/bspwm/examples/sxhkdrc "$HOME/.config/sxhkd/sxhkdrc"
 chmod +x "$HOME/.config/bspwm/bspwmrc"
 
-# 6. Create a basic picom config
+# 7. Write picom config
 cat << 'EOF' > "$HOME/.config/picom/picom.conf"
 backend = "glx"
 vsync = true
@@ -41,17 +43,18 @@ shadow-radius = 7
 shadow-opacity = 0.5
 EOF
 
-# 7. Set up X initialization
-# Restore your nitrogen wallpaper (if you've set one via nitrogen)
-echo 'nitrogen --restore &' > "$HOME/.xinitrc"
-# Launch bspwm
-echo 'exec bspwm' >> "$HOME/.xinitrc"
+# 8. Set up X initialization
+# Restore wallpaper and start bspwm
+cat << 'EOF' > "$HOME/.xinitrc"
+nitrogen --restore &
+exec bspwm
+EOF
 
-# 8. Final instructions
+# 9. Final message
 cat << 'EOF'
-Setup complete!
-- To start the desktop, run: startx
-- Use Super+Enter for terminal (Alacritty), Super+d for launcher (rofi).
-- Right-click the hidden edge of Plank to pin apps.
-- Run lxappearance to adjust GTK theme (Arc-Dark) and icons (Papirus-Dark).
+Setup complete! To start your bspwm desktop, run: startx
+- Super+Enter: Alacritty terminal
+- Super+d: Rofi launcher
+- Right-click Plank’s hidden edge to pin apps
+- Run lxappearance to set Arc-Dark theme & Papirus icons
 EOF
